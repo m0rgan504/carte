@@ -1,0 +1,14 @@
+cd worldview
+git init
+git add .
+git commit -m "feat: WorldView initial"
+git remote add origin https://github.com/TON_USERNAME/worldview.git
+git push -u origin main
+```
+
+### Étape 3 — Déployer sur Vercel
+1. Va sur **[vercel.com](https://vercel.com)** → **New Project**
+2. Importe ton repo `worldview`
+3. Dans **Environment Variables**, ajoute :
+```
+   NEXT_PUBLIC_MAPBOX_TOKEN = pk.eyJ1...ton_token...
