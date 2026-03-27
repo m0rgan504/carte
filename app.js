@@ -123,6 +123,11 @@ function initMap() {
     refreshWeatherMarkersForZoom();
   });
 
+  // Refresh aussi quand on déplace la carte
+  map.on('moveend', debounce(() => {
+    refreshWeatherMarkersForZoom();
+  }, 600));
+
   // Clic sur la carte → météo du lieu
   map.on('click', (e) => {
     fetchAndShowWeather(e.latlng.lat, e.latlng.lng, true);
@@ -361,94 +366,257 @@ async function fetchAndShowWeather(lat, lng, popup = false) {
   } catch(e) { console.error('fetchAndShowWeather', e); }
 }
 
-// ─── MARQUEURS MÉTÉO VILLES (selon zoom) ─────────────────────
+// ─── BASE DE VILLES (3 niveaux de priorité) ───────────────────
+// priorité 1 = capitales mondiales (zoom ≥ 2)
+// priorité 2 = grandes villes (zoom ≥ 5)
+// priorité 3 = villes moyennes / océans (zoom ≥ 7)
 const CITIES = [
-  { name: 'Paris', lat: 48.85, lng: 2.35 },
-  { name: 'London', lat: 51.51, lng: -0.13 },
-  { name: 'New York', lat: 40.71, lng: -74.01 },
-  { name: 'Tokyo', lat: 35.69, lng: 139.69 },
-  { name: 'Sydney', lat: -33.87, lng: 151.21 },
-  { name: 'Moscow', lat: 55.75, lng: 37.62 },
-  { name: 'Dubai', lat: 25.20, lng: 55.27 },
-  { name: 'São Paulo', lat: -23.55, lng: -46.63 },
-  { name: 'Cairo', lat: 30.04, lng: 31.24 },
-  { name: 'Mumbai', lat: 19.08, lng: 72.88 },
-  { name: 'Beijing', lat: 39.91, lng: 116.39 },
-  { name: 'Chicago', lat: 41.88, lng: -87.63 },
-  { name: 'Los Angeles', lat: 34.05, lng: -118.24 },
-  { name: 'Berlin', lat: 52.52, lng: 13.40 },
-  { name: 'Rome', lat: 41.90, lng: 12.50 },
-  { name: 'Madrid', lat: 40.42, lng: -3.70 },
-  { name: 'Toronto', lat: 43.65, lng: -79.38 },
-  { name: 'Mexico City', lat: 19.43, lng: -99.13 },
-  { name: 'Buenos Aires', lat: -34.60, lng: -58.38 },
-  { name: 'Lagos', lat: 6.52, lng: 3.38 },
-  { name: 'Nairobi', lat: -1.29, lng: 36.82 },
-  { name: 'Jakarta', lat: -6.21, lng: 106.85 },
-  { name: 'Seoul', lat: 37.57, lng: 126.98 },
-  { name: 'Bangkok', lat: 13.75, lng: 100.52 },
-  { name: 'Istanbul', lat: 41.01, lng: 28.95 },
-  { name: 'Atlantique N.', lat: 35.0, lng: -40.0 },
-  { name: 'Pacifique N.', lat: 30.0, lng: -150.0 },
-  { name: 'Océan Indien', lat: -15.0, lng: 70.0 },
-  { name: 'Mer Méditerranée', lat: 35.0, lng: 18.0 },
-  { name: 'Mer du Nord', lat: 56.0, lng: 3.0 },
-  { name: 'Mer de Chine', lat: 15.0, lng: 115.0 },
+  // PRIORITÉ 1 — visibles dès le départ
+  { name: 'Paris', lat: 48.85, lng: 2.35, p: 1 },
+  { name: 'London', lat: 51.51, lng: -0.13, p: 1 },
+  { name: 'New York', lat: 40.71, lng: -74.01, p: 1 },
+  { name: 'Tokyo', lat: 35.69, lng: 139.69, p: 1 },
+  { name: 'Sydney', lat: -33.87, lng: 151.21, p: 1 },
+  { name: 'Moscow', lat: 55.75, lng: 37.62, p: 1 },
+  { name: 'Dubai', lat: 25.20, lng: 55.27, p: 1 },
+  { name: 'São Paulo', lat: -23.55, lng: -46.63, p: 1 },
+  { name: 'Cairo', lat: 30.04, lng: 31.24, p: 1 },
+  { name: 'Beijing', lat: 39.91, lng: 116.39, p: 1 },
+  { name: 'Mumbai', lat: 19.08, lng: 72.88, p: 1 },
+  { name: 'Lagos', lat: 6.52, lng: 3.38, p: 1 },
+  // PRIORITÉ 2 — zoom ≥ 5
+  { name: 'Chicago', lat: 41.88, lng: -87.63, p: 2 },
+  { name: 'Los Angeles', lat: 34.05, lng: -118.24, p: 2 },
+  { name: 'Berlin', lat: 52.52, lng: 13.40, p: 2 },
+  { name: 'Rome', lat: 41.90, lng: 12.50, p: 2 },
+  { name: 'Madrid', lat: 40.42, lng: -3.70, p: 2 },
+  { name: 'Amsterdam', lat: 52.37, lng: 4.90, p: 2 },
+  { name: 'Warsaw', lat: 52.23, lng: 21.01, p: 2 },
+  { name: 'Vienna', lat: 48.21, lng: 16.37, p: 2 },
+  { name: 'Prague', lat: 50.08, lng: 14.44, p: 2 },
+  { name: 'Brussels', lat: 50.85, lng: 4.35, p: 2 },
+  { name: 'Toronto', lat: 43.65, lng: -79.38, p: 2 },
+  { name: 'Mexico City', lat: 19.43, lng: -99.13, p: 2 },
+  { name: 'Buenos Aires', lat: -34.60, lng: -58.38, p: 2 },
+  { name: 'Nairobi', lat: -1.29, lng: 36.82, p: 2 },
+  { name: 'Jakarta', lat: -6.21, lng: 106.85, p: 2 },
+  { name: 'Seoul', lat: 37.57, lng: 126.98, p: 2 },
+  { name: 'Bangkok', lat: 13.75, lng: 100.52, p: 2 },
+  { name: 'Istanbul', lat: 41.01, lng: 28.95, p: 2 },
+  { name: 'Tehran', lat: 35.69, lng: 51.39, p: 2 },
+  { name: 'Johannesburg', lat: -26.20, lng: 28.04, p: 2 },
+  { name: 'Singapore', lat: 1.35, lng: 103.82, p: 2 },
+  { name: 'Lima', lat: -12.05, lng: -77.04, p: 2 },
+  { name: 'Bogotá', lat: 4.71, lng: -74.07, p: 2 },
+  // PRIORITÉ 2 — mers et océans
+  { name: 'Atlantique N.', lat: 35.0, lng: -40.0, p: 2 },
+  { name: 'Pacifique N.', lat: 30.0, lng: -150.0, p: 2 },
+  { name: 'Océan Indien', lat: -15.0, lng: 70.0, p: 2 },
+  { name: 'Méditerranée', lat: 35.0, lng: 18.0, p: 2 },
+  { name: 'Mer du Nord', lat: 56.0, lng: 3.0, p: 2 },
+  { name: 'Mer de Chine', lat: 15.0, lng: 115.0, p: 2 },
+  // PRIORITÉ 3 — zoom élevé
+  { name: 'Lyon', lat: 45.75, lng: 4.83, p: 3 },
+  { name: 'Marseille', lat: 43.30, lng: 5.37, p: 3 },
+  { name: 'Bordeaux', lat: 44.84, lng: -0.58, p: 3 },
+  { name: 'Toulouse', lat: 43.60, lng: 1.44, p: 3 },
+  { name: 'Nice', lat: 43.70, lng: 7.27, p: 3 },
+  { name: 'Lille', lat: 50.63, lng: 3.07, p: 3 },
+  { name: 'Strasbourg', lat: 48.57, lng: 7.75, p: 3 },
+  { name: 'Nantes', lat: 47.22, lng: -1.55, p: 3 },
+  { name: 'Manchester', lat: 53.48, lng: -2.24, p: 3 },
+  { name: 'Barcelona', lat: 41.39, lng: 2.15, p: 3 },
+  { name: 'Milan', lat: 45.46, lng: 9.19, p: 3 },
+  { name: 'Munich', lat: 48.14, lng: 11.58, p: 3 },
+  { name: 'Hamburg', lat: 53.57, lng: 10.02, p: 3 },
+  { name: 'Zürich', lat: 47.38, lng: 8.54, p: 3 },
+  { name: 'Oslo', lat: 59.91, lng: 10.75, p: 3 },
+  { name: 'Stockholm', lat: 59.33, lng: 18.07, p: 3 },
+  { name: 'Helsinki', lat: 60.17, lng: 24.94, p: 3 },
+  { name: 'Copenhagen', lat: 55.68, lng: 12.57, p: 3 },
+  { name: 'Lisbon', lat: 38.72, lng: -9.14, p: 3 },
+  { name: 'Athens', lat: 37.98, lng: 23.73, p: 3 },
+  { name: 'Kyiv', lat: 50.45, lng: 30.52, p: 3 },
+  { name: 'Budapest', lat: 47.50, lng: 19.04, p: 3 },
+  { name: 'Bucharest', lat: 44.43, lng: 26.10, p: 3 },
+  { name: 'Vancouver', lat: 49.25, lng: -123.12, p: 3 },
+  { name: 'Seattle', lat: 47.61, lng: -122.33, p: 3 },
+  { name: 'Miami', lat: 25.77, lng: -80.19, p: 3 },
+  { name: 'Houston', lat: 29.76, lng: -95.37, p: 3 },
+  { name: 'Montreal', lat: 45.50, lng: -73.57, p: 3 },
+  { name: 'Santiago', lat: -33.45, lng: -70.67, p: 3 },
+  { name: 'Casablanca', lat: 33.59, lng: -7.62, p: 3 },
+  { name: 'Tunis', lat: 36.82, lng: 10.17, p: 3 },
+  { name: 'Accra', lat: 5.55, lng: -0.20, p: 3 },
+  { name: 'Addis Abeba', lat: 9.03, lng: 38.74, p: 3 },
+  { name: 'Karachi', lat: 24.86, lng: 67.01, p: 3 },
+  { name: 'Dhaka', lat: 23.72, lng: 90.41, p: 3 },
+  { name: 'Hanoi', lat: 21.03, lng: 105.83, p: 3 },
+  { name: 'Kuala Lumpur', lat: 3.14, lng: 101.69, p: 3 },
+  { name: 'Manila', lat: 14.60, lng: 120.98, p: 3 },
+  { name: 'Osaka', lat: 34.69, lng: 135.50, p: 3 },
+  { name: 'Auckland', lat: -36.86, lng: 174.76, p: 3 },
+  { name: 'Melbourne', lat: -37.81, lng: 144.96, p: 3 },
 ];
 
-let weatherLayerGroup = L.layerGroup();
+// ─── CACHE MÉTÉO ──────────────────────────────────────────────
+const cityWeatherCache = {};  // { "lat,lng": { data, ts } }
+const CACHE_TTL = 10 * 60 * 1000; // 10 min
 
-async function loadCityWeather(city) {
-  try {
-    const url = `https://api.open-meteo.com/v1/forecast?latitude=${city.lat}&longitude=${city.lng}&current=temperature_2m,weather_code,windspeed_10m&timezone=auto`;
-    const res = await fetch(url);
-    const data = await res.json();
-    const c = data.current;
-    const wmo = wmoInfo(c.weather_code);
-    const icon = L.divIcon({
-      className: '',
-      html: `<div style="
-        background: rgba(2,10,24,0.88);
-        border: 1px solid rgba(0,255,245,0.4);
-        color: #00fff5;
-        font-family: 'Share Tech Mono', monospace;
-        font-size: 10px;
-        padding: 3px 6px;
-        white-space: nowrap;
-        box-shadow: 0 0 8px rgba(0,255,245,0.3);
-        cursor: pointer;
-        line-height: 1.4;
-      ">
-        <span style="font-size:12px">${wmo.icon}</span>
-        <b style="color:#ffe600">${Math.round(c.temperature_2m)}°C</b>
-        <span style="color:rgba(160,220,240,0.7);font-size:9px"> ${city.name}</span>
-      </div>`,
-      iconAnchor: [0, 0],
-    });
-    const marker = L.marker([city.lat, city.lng], { icon }).addTo(weatherLayerGroup);
-    marker.on('click', () => fetchAndShowWeather(city.lat, city.lng, true));
-    return marker;
-  } catch(e) {}
+async function getCityWeather(lat, lng) {
+  const key = `${lat},${lng}`;
+  const now = Date.now();
+  if (cityWeatherCache[key] && now - cityWeatherCache[key].ts < CACHE_TTL) {
+    return cityWeatherCache[key].data;
+  }
+  const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lng}&current=temperature_2m,apparent_temperature,weather_code,windspeed_10m,winddirection_10m,uv_index&daily=temperature_2m_max,temperature_2m_min&timezone=auto&forecast_days=1`;
+  const res = await fetch(url);
+  const data = await res.json();
+  cityWeatherCache[key] = { data, ts: now };
+  return data;
 }
 
-async function refreshWeatherMarkersForZoom() {
-  weatherLayerGroup.clearLayers();
-  if (zoomLevel < 3) {
-    // Seulement les grandes villes et océans
-    const subset = CITIES.slice(0, 10);
-    for (const c of subset) await loadCityWeather(c);
-  } else if (zoomLevel < 6) {
-    for (const c of CITIES) await loadCityWeather(c);
-  } else {
-    // Zoom fort : on récupère les villes de la zone visible
-    const bounds = map.getBounds();
-    const filtered = CITIES.filter(c =>
-      c.lat >= bounds.getSouth() && c.lat <= bounds.getNorth() &&
-      c.lng >= bounds.getWest() && c.lng <= bounds.getEast()
-    );
-    for (const c of filtered.length ? filtered : CITIES.slice(0, 6)) await loadCityWeather(c);
+// ─── CRÉATION DU MARQUEUR SELON LE ZOOM ───────────────────────
+// zoom 2-4  → juste icône + temp
+// zoom 5-6  → icône + temp + vent
+// zoom 7-8  → icône + temp + min/max + vent + UV
+// zoom 9+   → carte complète : temp, ressenti, min/max, vent dir, UV, météo
+
+function buildWeatherMarkerHTML(city, c, daily, zoom) {
+  const wmo = wmoInfo(c.weather_code);
+  const temp = Math.round(c.temperature_2m);
+  const windspd = Math.round(c.windspeed_10m);
+  const winddir = windDirLabel(c.winddirection_10m);
+  const uv = (c.uv_index ?? 0).toFixed(1);
+  const tmin = Math.round(daily.temperature_2m_min[0]);
+  const tmax = Math.round(daily.temperature_2m_max[0]);
+  const resenti = Math.round(c.apparent_temperature);
+
+  // Couleur temp
+  let tempColor = '#00fff5';
+  if (temp <= 0) tempColor = '#66ccff';
+  else if (temp >= 35) tempColor = '#ff2d78';
+  else if (temp >= 25) tempColor = '#ffe600';
+
+  if (zoom <= 4) {
+    // NIVEAU 1 : ultra compact — icône + temp uniquement
+    return `<div class="wm-chip wm-lvl1">
+      <span class="wm-icon">${wmo.icon}</span>
+      <span class="wm-temp" style="color:${tempColor}">${temp}°</span>
+      <span class="wm-name">${city.name}</span>
+    </div>`;
   }
+
+  if (zoom <= 6) {
+    // NIVEAU 2 : compact — icône + temp + vent
+    return `<div class="wm-chip wm-lvl2">
+      <div class="wm-row-top">
+        <span class="wm-icon">${wmo.icon}</span>
+        <span class="wm-temp" style="color:${tempColor}">${temp}°C</span>
+      </div>
+      <div class="wm-city">${city.name}</div>
+      <div class="wm-row-sub">💨 ${windspd} km/h ${winddir}</div>
+    </div>`;
+  }
+
+  if (zoom <= 8) {
+    // NIVEAU 3 : moyen — temp min/max + vent + UV
+    return `<div class="wm-chip wm-lvl3">
+      <div class="wm-row-top">
+        <span class="wm-icon">${wmo.icon}</span>
+        <span class="wm-temp" style="color:${tempColor}">${temp}°C</span>
+      </div>
+      <div class="wm-city">${city.name}</div>
+      <div class="wm-row-sub">
+        <span>↓${tmin}° ↑${tmax}°</span>
+      </div>
+      <div class="wm-row-sub">
+        <span>💨 ${windspd} km/h ${winddir}</span>
+        <span style="color:#ff6b00">UV ${uv}</span>
+      </div>
+    </div>`;
+  }
+
+  // NIVEAU 4 : zoom 9+ — carte complète
+  return `<div class="wm-chip wm-lvl4">
+    <div class="wm-title-bar">
+      <span class="wm-icon-lg">${wmo.icon}</span>
+      <div>
+        <div class="wm-city-lg">${city.name}</div>
+        <div class="wm-desc">${wmo.label}</div>
+      </div>
+    </div>
+    <div class="wm-divider"></div>
+    <div class="wm-grid4">
+      <div class="wm-cell"><span class="wm-lbl">TEMP</span><span class="wm-val" style="color:${tempColor}">${temp}°C</span></div>
+      <div class="wm-cell"><span class="wm-lbl">RESSENTI</span><span class="wm-val">${resenti}°C</span></div>
+      <div class="wm-cell"><span class="wm-lbl">MIN/MAX</span><span class="wm-val">${tmin}° / ${tmax}°</span></div>
+      <div class="wm-cell"><span class="wm-lbl">UV</span><span class="wm-val" style="color:#ff6b00">${uv}</span></div>
+      <div class="wm-cell"><span class="wm-lbl">VENT</span><span class="wm-val">${windspd} km/h</span></div>
+      <div class="wm-cell"><span class="wm-lbl">DIR.</span><span class="wm-val">${winddir} ${Math.round(c.winddirection_10m)}°</span></div>
+    </div>
+  </div>`;
+}
+
+// ─── COUCHE MÉTÉO ADAPTATIVE ──────────────────────────────────
+let weatherLayerGroup = L.layerGroup();
+let isRefreshing = false;
+
+async function refreshWeatherMarkersForZoom() {
+  if (isRefreshing) return;
+  isRefreshing = true;
+  weatherLayerGroup.clearLayers();
+
+  const bounds = map.getBounds();
+  const zoom = map.getZoom();
+
+  // Filtre selon priorité et zone visible
+  let citiesToShow = CITIES.filter(city => {
+    const inBounds = bounds.contains([city.lat, city.lng]);
+    if (zoom <= 4) return city.p === 1;
+    if (zoom <= 6) return city.p <= 2 && inBounds;
+    return inBounds; // zoom 7+ : toutes les villes dans la zone
+  });
+
+  // Limite le nombre de requêtes simultanées
+  const MAX = zoom <= 4 ? 12 : zoom <= 6 ? 30 : 50;
+  citiesToShow = citiesToShow.slice(0, MAX);
+
+  // Requêtes groupées par batch de 5
+  const BATCH = 5;
+  for (let i = 0; i < citiesToShow.length; i += BATCH) {
+    const batch = citiesToShow.slice(i, i + BATCH);
+    await Promise.all(batch.map(city => addWeatherMarker(city, zoom)));
+  }
+
   weatherLayerGroup.addTo(map);
+  isRefreshing = false;
+}
+
+async function addWeatherMarker(city, zoom) {
+  try {
+    const data = await getCityWeather(city.lat, city.lng);
+    const c = data.current;
+    const daily = data.daily;
+
+    const html = buildWeatherMarkerHTML(city, c, daily, zoom);
+    const icon = L.divIcon({
+      className: 'weather-marker-wrapper',
+      html,
+      iconAnchor: [0, 0],
+    });
+
+    const marker = L.marker([city.lat, city.lng], { icon, zIndexOffset: 100 });
+
+    // Clic → popup détaillée + mise à jour HUD
+    marker.on('click', () => {
+      fetchAndShowWeather(city.lat, city.lng, true);
+    });
+
+    weatherLayerGroup.addLayer(marker);
+  } catch(e) {
+    console.warn(`Météo ${city.name} : erreur`, e);
+  }
 }
 
 // ─── ISS TRACKING ─────────────────────────────────────────────
