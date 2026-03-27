@@ -513,7 +513,95 @@ html, body {
   .logo-glyph { font-size: 22px; }
 }
 
-/* ---- ZOOM-LEVEL LABEL ---- */
+/* ---- WEATHER MARKERS ADAPTATIFS ---- */
+.weather-marker-wrapper { background: transparent !important; border: none !important; }
+
+/* Niveau 1 : ultra compact (zoom 2-4) */
+.wm-chip {
+  font-family: 'Share Tech Mono', monospace;
+  background: rgba(2, 10, 24, 0.90);
+  border: 1px solid rgba(0, 255, 245, 0.35);
+  box-shadow: 0 0 8px rgba(0,255,245,0.2);
+  cursor: pointer;
+  transition: box-shadow 0.2s, border-color 0.2s;
+  white-space: nowrap;
+}
+.wm-chip:hover {
+  border-color: var(--neon-cyan);
+  box-shadow: 0 0 14px rgba(0,255,245,0.5);
+  z-index: 999 !important;
+}
+
+.wm-lvl1 {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 6px;
+}
+.wm-lvl1 .wm-icon { font-size: 12px; }
+.wm-lvl1 .wm-temp { font-size: 12px; font-weight: bold; }
+.wm-lvl1 .wm-name { font-size: 8px; color: rgba(160,220,240,0.65); }
+
+/* Niveau 2 : compact (zoom 5-6) */
+.wm-lvl2 {
+  padding: 4px 8px;
+  min-width: 80px;
+}
+.wm-lvl2 .wm-row-top { display: flex; align-items: center; gap: 5px; }
+.wm-lvl2 .wm-icon { font-size: 16px; }
+.wm-lvl2 .wm-temp { font-size: 15px; font-weight: bold; }
+.wm-lvl2 .wm-city { font-size: 9px; color: rgba(160,220,240,0.65); margin: 2px 0 1px; letter-spacing: 1px; }
+.wm-lvl2 .wm-row-sub { font-size: 9px; color: var(--neon-cyan); opacity: 0.8; }
+
+/* Niveau 3 : moyen (zoom 7-8) */
+.wm-lvl3 {
+  padding: 6px 10px;
+  min-width: 110px;
+}
+.wm-lvl3 .wm-row-top { display: flex; align-items: center; gap: 6px; margin-bottom: 3px; }
+.wm-lvl3 .wm-icon { font-size: 18px; }
+.wm-lvl3 .wm-temp { font-size: 17px; font-weight: bold; }
+.wm-lvl3 .wm-city { font-size: 9px; color: rgba(160,220,240,0.65); letter-spacing: 1px; margin-bottom: 3px; }
+.wm-lvl3 .wm-row-sub {
+  display: flex; justify-content: space-between;
+  font-size: 9px; color: var(--neon-cyan);
+  margin-bottom: 2px;
+}
+
+/* Niveau 4 : complet (zoom 9+) */
+.wm-lvl4 {
+  padding: 8px 12px;
+  min-width: 160px;
+}
+.wm-title-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+.wm-icon-lg { font-size: 22px; }
+.wm-city-lg {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--neon-cyan);
+  text-shadow: var(--glow-cyan);
+  letter-spacing: 1px;
+}
+.wm-desc { font-size: 9px; color: rgba(160,220,240,0.6); margin-top: 1px; }
+.wm-divider {
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(0,255,245,0.3), transparent);
+  margin-bottom: 6px;
+}
+.wm-grid4 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px 10px;
+}
+.wm-cell { display: flex; flex-direction: column; gap: 1px; }
+.wm-lbl { font-size: 7px; letter-spacing: 1.5px; color: rgba(160,220,240,0.5); }
+.wm-val { font-size: 12px; color: var(--neon-cyan); font-weight: bold; }
 .zoom-indicator {
   position: fixed;
   bottom: 130px;
