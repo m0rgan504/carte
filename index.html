@@ -1,5 +1,164 @@
-git init
-git add .
-git commit -m "WorldView"
-git remote add origin https://github.com/TON_USERNAME/worldview.git
-git push -u origin main
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>GeoWatch — Carte Météo Mondiale</title>
+
+  <!-- Leaflet -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+  <!-- Leaflet Globe (Leaflet.GlobeView) -->
+  <script src="https://unpkg.com/leaflet.globeview@0.2.1/dist/leaflet.globeview.min.js"></script>
+
+  <!-- Leaflet Plugins -->
+  <script src="https://unpkg.com/leaflet-velocity@1.7.0/dist/leaflet-velocity.min.js"></script>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet-velocity@1.7.0/dist/leaflet-velocity.min.css" />
+
+  <!-- SunCalc pour position soleil -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/suncalc/1.9.0/suncalc.min.js"></script>
+
+  <!-- Fonts cyberpunk -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Share+Tech+Mono&display=swap" rel="stylesheet" />
+
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <!-- Header -->
+  <header id="site-header">
+    <div class="header-left">
+      <div class="logo-glyph">◈</div>
+      <div class="logo-text">
+        <span class="logo-main">GEO<span class="neon-accent">WATCH</span></span>
+        <span class="logo-sub">PLANETARY MONITORING SYSTEM</span>
+      </div>
+    </div>
+    <div class="header-center">
+      <div class="clock-block">
+        <div id="clock-time" class="clock-time">00:00:00</div>
+        <div id="clock-date" class="clock-date">--- --, ----</div>
+      </div>
+    </div>
+    <div class="header-right">
+      <div class="status-dot" id="data-status"></div>
+      <span class="status-label">LIVE DATA</span>
+      <button id="toggle-globe" class="globe-toggle-btn" title="Basculer Globe/Carte">
+        <span class="toggle-icon">🌐</span>
+        <span class="toggle-label">GLOBE</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- Scan line effect -->
+  <div class="scanlines"></div>
+
+  <!-- Main map -->
+  <div id="map"></div>
+
+  <!-- HUD Overlay: panneau météo local -->
+  <div id="hud-panel" class="hud-panel">
+    <div class="hud-title">
+      <span class="hud-icon">📍</span>
+      <span id="hud-location">Chargement...</span>
+    </div>
+    <div class="hud-grid">
+      <div class="hud-item">
+        <span class="hud-label">TEMP</span>
+        <span class="hud-value" id="hud-temp">--°C</span>
+      </div>
+      <div class="hud-item">
+        <span class="hud-label">MIN/MAX</span>
+        <span class="hud-value" id="hud-minmax">--/--</span>
+      </div>
+      <div class="hud-item">
+        <span class="hud-label">UV</span>
+        <span class="hud-value" id="hud-uv">--</span>
+      </div>
+      <div class="hud-item">
+        <span class="hud-label">VENT</span>
+        <span class="hud-value" id="hud-wind">-- km/h</span>
+      </div>
+      <div class="hud-item">
+        <span class="hud-label">DIR. VENT</span>
+        <span class="hud-value" id="hud-wind-dir">--</span>
+      </div>
+      <div class="hud-item">
+        <span class="hud-label">MÉTÉO</span>
+        <span class="hud-value" id="hud-weather">--</span>
+      </div>
+      <div class="hud-item">
+        <span class="hud-label">LEVER ☀️</span>
+        <span class="hud-value" id="hud-sunrise">--:--</span>
+      </div>
+      <div class="hud-item">
+        <span class="hud-label">COUCHER 🌙</span>
+        <span class="hud-value" id="hud-sunset">--:--</span>
+      </div>
+    </div>
+    <!-- Soleil dans le ciel -->
+    <div class="sun-arc-container">
+      <div class="sun-arc-label">POSITION SOLEIL</div>
+      <div class="sun-arc" id="sun-arc">
+        <svg viewBox="0 0 200 110" class="sun-arc-svg">
+          <defs>
+            <linearGradient id="arcGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+              <stop offset="0%" style="stop-color:#ff6b00;stop-opacity:0.3"/>
+              <stop offset="50%" style="stop-color:#ffe600;stop-opacity:0.8"/>
+              <stop offset="100%" style="stop-color:#ff6b00;stop-opacity:0.3"/>
+            </linearGradient>
+          </defs>
+          <path d="M 10 100 Q 100 10 190 100" fill="none" stroke="url(#arcGrad)" stroke-width="2" stroke-dasharray="4,3" opacity="0.6"/>
+          <line x1="10" y1="100" x2="190" y2="100" stroke="#0ff3" stroke-width="1"/>
+          <circle id="sun-dot" cx="100" cy="50" r="7" fill="#ffe600" filter="url(#sunGlow)"/>
+          <defs>
+            <filter id="sunGlow">
+              <feGaussianBlur stdDeviation="3" result="blur"/>
+              <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+            </filter>
+          </defs>
+          <text x="5" y="108" fill="#0ff8" font-size="7" font-family="Share Tech Mono">LEVER</text>
+          <text x="155" y="108" fill="#0ff8" font-size="7" font-family="Share Tech Mono">COUCHER</text>
+        </svg>
+      </div>
+    </div>
+  </div>
+
+  <!-- Panneau prévisions 7 jours -->
+  <div id="forecast-panel" class="forecast-panel">
+    <div class="forecast-title">PRÉVISIONS 7 JOURS</div>
+    <div id="forecast-grid" class="forecast-grid">
+      <!-- rempli par JS -->
+    </div>
+  </div>
+
+  <!-- Légende -->
+  <div id="legend" class="legend-panel">
+    <div class="legend-title">LÉGENDE</div>
+    <div class="legend-item"><span class="legend-dot eq-major"></span> Séisme majeur (M≥6)</div>
+    <div class="legend-item"><span class="legend-dot eq-moderate"></span> Séisme modéré (M4-6)</div>
+    <div class="legend-item"><span class="legend-dot eq-minor"></span> Séisme mineur (M&lt;4)</div>
+    <div class="legend-item"><span class="legend-dot storm"></span> Tempête / Cyclone</div>
+    <div class="legend-item"><span class="legend-dot volcano"></span> Éruption volcanique</div>
+    <div class="legend-item"><span class="legend-dot flood"></span> Inondation</div>
+    <div class="legend-item"><span class="legend-dot iss"></span> Station ISS</div>
+  </div>
+
+  <!-- Tooltip météo dynamique sur la carte -->
+  <div id="map-tooltip" class="map-tooltip" style="display:none;"></div>
+
+  <!-- Loading screen -->
+  <div id="loading-screen" class="loading-screen">
+    <div class="loading-content">
+      <div class="loading-logo">◈ GEOWATCH</div>
+      <div class="loading-bar-wrap"><div class="loading-bar" id="loading-bar"></div></div>
+      <div class="loading-msg" id="loading-msg">Initialisation des systèmes...</div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
