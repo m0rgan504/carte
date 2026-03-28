@@ -2,20 +2,18 @@
 <html lang="fr">
 <head>
   <meta charset="UTF-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
   <title>GeoWatch — Planetary Monitoring</title>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/suncalc/1.9.0/suncalc.min.js"></script>
-  <link rel="preconnect" href="https://fonts.googleapis.com"/>
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
   <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Share+Tech+Mono&display=swap" rel="stylesheet"/>
   <link rel="stylesheet" href="style.css"/>
 </head>
 <body>
 
-<!-- LOADING -->
+<!-- ░ LOADING ░ -->
 <div id="loading-screen" class="loading-screen">
   <div class="loading-content">
     <div class="loading-logo">◈ GEOWATCH</div>
@@ -27,13 +25,13 @@
 
 <div class="scanlines"></div>
 
-<!-- HEADER -->
+<!-- ░ HEADER ░ -->
 <header id="site-header">
   <div class="header-left">
     <div class="logo-glyph">◈</div>
     <div class="logo-text">
       <span class="logo-main">GEO<span class="neon-c">WATCH</span></span>
-      <span class="logo-sub">PLANETARY MONITORING SYSTEM</span>
+      <span class="logo-sub">PLANETARY MONITORING</span>
     </div>
   </div>
   <div class="header-center">
@@ -43,107 +41,206 @@
   <div class="header-right">
     <div class="live-dot"></div>
     <span class="live-label">LIVE</span>
-    <!-- Sélecteur de style carte -->
-    <div class="style-picker">
-      <button class="btn-style active" data-style="dark" title="Sombre cyberpunk">◼</button>
-      <button class="btn-style" data-style="satellite" title="Satellite">🛰</button>
-      <button class="btn-style" data-style="topo" title="Topographique">⛰</button>
-      <button class="btn-style" data-style="light" title="Clair">◻</button>
-    </div>
-    <button id="btn-toggle-view" class="btn-mode">
-      <span id="mode-icon">🌐</span>
-      <span id="mode-label">GLOBE</span>
-    </button>
+    <button id="btn-layers" class="btn-hdr" title="Couches">⊞ COUCHES</button>
+    <button id="btn-help"   class="btn-hdr btn-help-hdr" title="Aide">? AIDE</button>
+    <button id="btn-theme"  class="btn-hdr" title="Thème">☀️ CLAIR</button>
+    <button id="btn-toggle-view" class="btn-mode">🌐 <span id="mode-label">GLOBE</span></button>
   </div>
 </header>
 
-<!-- MAP 2D -->
+<!-- ░ MAP 2D ░ -->
 <div id="map-wrap"><div id="map"></div></div>
 
-<!-- GLOBE 3D -->
+<!-- ░ GLOBE 3D ░ -->
 <div id="globe-wrap">
   <canvas id="globe-canvas"></canvas>
   <div id="globe-labels"></div>
 </div>
 
-<!-- HUD MÉTÉO -->
+<!-- ░ PANNEAU COUCHES ░ -->
+<div id="layers-panel" class="layers-panel hidden">
+  <div class="layers-title">⊞ COUCHES D'AFFICHAGE</div>
+  <label class="layer-row" data-layer="wx">
+    <span class="layer-toggle" id="lt-wx"></span>
+    <span class="layer-ico">🌡️</span>
+    <span>Météo villes &amp; dép.</span>
+  </label>
+  <label class="layer-row" data-layer="eq">
+    <span class="layer-toggle" id="lt-eq"></span>
+    <span class="layer-ico">🔴</span>
+    <span>Séismes</span>
+  </label>
+  <label class="layer-row" data-layer="dis">
+    <span class="layer-toggle" id="lt-dis"></span>
+    <span class="layer-ico">🌋</span>
+    <span>Volcans &amp; catastrophes</span>
+  </label>
+  <label class="layer-row" data-layer="ocean">
+    <span class="layer-toggle" id="lt-ocean"></span>
+    <span class="layer-ico">🌊</span>
+    <span>Océans &amp; courants</span>
+  </label>
+  <label class="layer-row" data-layer="iss">
+    <span class="layer-toggle" id="lt-iss"></span>
+    <span class="layer-ico">🛸</span>
+    <span>Trajectoire ISS</span>
+  </label>
+  <label class="layer-row" data-layer="fc">
+    <span class="layer-toggle" id="lt-fc"></span>
+    <span class="layer-ico">📅</span>
+    <span>Prévisions 7 jours</span>
+  </label>
+</div>
+
+<!-- ░ HUD MÉTÉO ░ -->
 <div id="hud" class="hud">
-  <div class="hud-title"><span>📍</span><span id="hud-loc">Chargement...</span></div>
+  <div class="hud-title">📍 <span id="hud-loc">Chargement...</span></div>
   <div class="hud-grid">
     <div class="hud-cell"><div class="hud-lbl">TEMP</div><div class="hud-val" id="h-temp">--</div></div>
     <div class="hud-cell"><div class="hud-lbl">RESSENTI</div><div class="hud-val" id="h-feels">--</div></div>
-    <div class="hud-cell"><div class="hud-lbl">MIN/MAX</div><div class="hud-val" id="h-mm">--</div></div>
+    <div class="hud-cell"><div class="hud-lbl">MIN / MAX</div><div class="hud-val" id="h-mm">--</div></div>
+    <div class="hud-cell"><div class="hud-lbl">HUMIDITÉ</div><div class="hud-val neon-b" id="h-hum">--</div></div>
     <div class="hud-cell"><div class="hud-lbl">UV</div><div class="hud-val neon-o" id="h-uv">--</div></div>
     <div class="hud-cell"><div class="hud-lbl">VENT</div><div class="hud-val" id="h-wind">--</div></div>
-    <div class="hud-cell"><div class="hud-lbl">DIR.</div><div class="hud-val" id="h-wdir">--</div></div>
-    <div class="hud-cell full"><div class="hud-lbl">MÉTÉO</div><div class="hud-val" id="h-wx">--</div></div>
+    <div class="hud-cell"><div class="hud-lbl">DIR. VENT</div><div class="hud-val" id="h-wdir">--</div></div>
+    <div class="hud-cell"><div class="hud-lbl">MÉTÉO</div><div class="hud-val" id="h-wx">--</div></div>
     <div class="hud-cell full hud-cell-local">
-      <div class="hud-lbl">HEURE LOCALE</div>
+      <div class="hud-lbl">🕐 HEURE LOCALE DU LIEU</div>
       <div class="hud-val neon-y" id="h-localtime">--:--:--</div>
     </div>
   </div>
-  <!-- Arc soleil -->
+  <!-- Soleil -->
   <div class="sun-block">
-    <div class="sun-label">☀️ <span id="h-rise">--:--</span> &nbsp;—&nbsp; <span id="h-set">--:--</span> 🌙</div>
-    <svg viewBox="0 0 200 80" class="sun-svg">
+    <div class="sun-label">☀️ Lever <span id="h-rise">--:--</span> &nbsp;|&nbsp; Coucher <span id="h-set">--:--</span> 🌙</div>
+    <svg viewBox="0 0 200 72" class="sun-svg">
       <defs>
         <linearGradient id="ag" x1="0%" y1="0%" x2="100%" y2="0%">
-          <stop offset="0%"   style="stop-color:#ff6b00;stop-opacity:.15"/>
-          <stop offset="50%"  style="stop-color:#ffe600;stop-opacity:.7"/>
-          <stop offset="100%" style="stop-color:#ff6b00;stop-opacity:.15"/>
+          <stop offset="0%"   style="stop-color:#ff6b00;stop-opacity:.12"/>
+          <stop offset="50%"  style="stop-color:#ffe600;stop-opacity:.75"/>
+          <stop offset="100%" style="stop-color:#ff6b00;stop-opacity:.12"/>
         </linearGradient>
-        <filter id="sg2">
-          <feGaussianBlur stdDeviation="2.5" result="b"/>
-          <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
-        </filter>
+        <filter id="sg2"><feGaussianBlur stdDeviation="2.5" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
       </defs>
-      <path d="M8 72 Q100 4 192 72" fill="none" stroke="url(#ag)" stroke-width="1.5" stroke-dasharray="4,3"/>
-      <line x1="8" y1="72" x2="192" y2="72" stroke="rgba(0,255,245,.18)" stroke-width="1"/>
-      <circle id="sun-dot" cx="100" cy="38" r="6" fill="#ffe600" filter="url(#sg2)"/>
+      <path d="M8 65 Q100 3 192 65" fill="none" stroke="url(#ag)" stroke-width="1.5" stroke-dasharray="4,3"/>
+      <line x1="8" y1="65" x2="192" y2="65" stroke="rgba(0,255,245,.18)" stroke-width="1"/>
+      <circle id="sun-dot" cx="100" cy="34" r="6" fill="#ffe600" filter="url(#sg2)"/>
     </svg>
   </div>
-  <!-- ISS Infos -->
+  <!-- ISS -->
   <div class="iss-block">
-    <div class="iss-title">🛸 ISS — STATION SPATIALE</div>
+    <div class="iss-title">🛸 ISS</div>
     <div class="iss-grid">
-      <div class="iss-cell"><span class="iss-lbl">LAT</span><span class="iss-val" id="iss-lat">--</span></div>
-      <div class="iss-cell"><span class="iss-lbl">LNG</span><span class="iss-val" id="iss-lng">--</span></div>
-      <div class="iss-cell"><span class="iss-lbl">ALTITUDE</span><span class="iss-val" id="iss-alt">--</span></div>
-      <div class="iss-cell"><span class="iss-lbl">VITESSE</span><span class="iss-val" id="iss-spd">--</span></div>
-      <div class="iss-cell"><span class="iss-lbl">TEMP EXT.</span><span class="iss-val" id="iss-temp">~−120°/+120°C</span></div>
-      <div class="iss-cell"><span class="iss-lbl">PÉRIODE</span><span class="iss-val">~92 min</span></div>
+      <div class="iss-cell"><div class="iss-lbl">LAT</div><div class="iss-val" id="iss-lat">--</div></div>
+      <div class="iss-cell"><div class="iss-lbl">LNG</div><div class="iss-val" id="iss-lng">--</div></div>
+      <div class="iss-cell"><div class="iss-lbl">ALTITUDE</div><div class="iss-val" id="iss-alt">--</div></div>
+      <div class="iss-cell"><div class="iss-lbl">VITESSE</div><div class="iss-val" id="iss-spd">--</div></div>
     </div>
   </div>
 </div>
-<button id="hud-toggle" class="hud-toggle"><span id="hud-arrow">◀</span></button>
+<button id="hud-toggle" class="hud-toggle" title="Afficher/Masquer">◀</button>
 
-<!-- PRÉVISIONS 7J -->
+<!-- ░ PRÉVISIONS 7J ░ -->
 <div id="forecast" class="forecast">
   <div class="fc-header">
-    <div class="fc-title">◈ PRÉVISIONS 7 JOURS</div>
-    <button id="fc-toggle" class="fc-toggle" title="Rétracter">▼</button>
+    <span class="fc-title">◈ PRÉVISIONS 7 JOURS</span>
+    <button id="fc-toggle" class="fc-toggle-btn">▼</button>
   </div>
   <div id="fc-body" class="fc-body">
     <div id="fc-grid" class="fc-grid"></div>
   </div>
 </div>
 
-<!-- LÉGENDE -->
+<!-- ░ LÉGENDE ░ -->
 <div id="legend" class="legend">
   <div class="legend-title">LÉGENDE</div>
-  <div class="leg-row"><span class="leg-dot" style="background:#ff2d78;box-shadow:0 0 5px #ff2d78"></span>Séisme M≥6</div>
-  <div class="leg-row"><span class="leg-dot" style="background:#ff6b00;box-shadow:0 0 5px #ff6b00"></span>Séisme M4–6</div>
-  <div class="leg-row"><span class="leg-dot" style="background:#ffe600;box-shadow:0 0 5px #ffe600"></span>Séisme M&lt;4</div>
-  <div class="leg-row"><span class="leg-dot" style="background:#b266ff;box-shadow:0 0 5px #b266ff"></span>Cyclone</div>
-  <div class="leg-row"><span class="leg-dot" style="background:#ff4400;box-shadow:0 0 5px #ff4400"></span>Éruption</div>
-  <div class="leg-row"><span class="leg-dot" style="background:#0088ff;box-shadow:0 0 5px #0088ff"></span>Inondation</div>
-  <div class="leg-row"><span class="leg-dot" style="background:#00ff9f;box-shadow:0 0 5px #00ff9f"></span>ISS</div>
-  <div class="leg-row"><span class="leg-dot" style="background:#00ccff;box-shadow:0 0 5px #00ccff"></span>Océan/Mer</div>
+  <div class="leg-row"><span class="leg-dot" style="background:#ff2d78"></span>Séisme M≥6</div>
+  <div class="leg-row"><span class="leg-dot" style="background:#ff6b00"></span>Séisme M4–6</div>
+  <div class="leg-row"><span class="leg-dot" style="background:#ffe600"></span>Séisme M&lt;4</div>
+  <div class="leg-row"><span class="leg-dot" style="background:#b266ff"></span>Cyclone</div>
+  <div class="leg-row"><span class="leg-dot" style="background:#ff4400"></span>Éruption</div>
+  <div class="leg-row"><span class="leg-dot" style="background:#0088ff"></span>Inondation</div>
+  <div class="leg-row"><span class="leg-line" style="background:#00fff5"></span>Orbite passée ISS</div>
+  <div class="leg-row"><span class="leg-line" style="background:#00ff9f"></span>Orbite future ISS</div>
 </div>
 
 <div id="zoom-ind" class="zoom-ind">ZOOM : 4</div>
 <div id="tip" class="tip" style="display:none"></div>
-<button id="mob-hud" class="mob-hud">◈ MÉTÉO</button>
+
+<!-- ░ BOUTON MOBILE HUD ░ -->
+<button id="mob-hud" class="mob-btn mob-hud-btn">🌡 MÉTÉO</button>
+
+<!-- ░ MODALE AIDE ░ -->
+<div id="help-modal" class="modal-overlay hidden">
+  <div class="modal-box">
+    <div class="modal-header">
+      <span class="modal-title">? GUIDE D'UTILISATION</span>
+      <button id="help-close" class="modal-close">✕</button>
+    </div>
+    <div class="modal-body">
+
+      <div class="help-section">
+        <div class="help-section-title">🗺️ CARTE & GLOBE</div>
+        <div class="help-item"><span class="help-key">Bouton GLOBE</span> Bascule entre la carte 2D plate et le globe 3D interactif.</div>
+        <div class="help-item"><span class="help-key">Faire glisser</span> Sur le globe : tourner. Sur la carte : se déplacer.</div>
+        <div class="help-item"><span class="help-key">Molette / Pincer</span> Zoomer / Dézoomer.</div>
+        <div class="help-item"><span class="help-key">Cliquer sur la carte</span> Affiche la météo complète du lieu cliqué dans le panneau gauche et une popup.</div>
+        <div class="help-item"><span class="help-key">Bouton ☀️ / 🌙</span> Bascule entre le thème sombre cyberpunk et le thème clair.</div>
+      </div>
+
+      <div class="help-section">
+        <div class="help-section-title">🌡️ MÉTÉO ADAPTATIVE AU ZOOM</div>
+        <div class="help-item"><span class="help-key">Zoom 2–4</span> Températures des capitales mondiales.</div>
+        <div class="help-item"><span class="help-key">Zoom 5–6</span> + Grandes villes, océans et mers.</div>
+        <div class="help-item"><span class="help-key">Zoom 7–8</span> + Villes moyennes, info détaillées (min/max, vent).</div>
+        <div class="help-item"><span class="help-key">Zoom 9+</span> + Tous les départements français avec température, UV, humidité, vent.</div>
+        <div class="help-item"><span class="help-key">Survol</span> (ordinateur) : bulle d'info instantanée sur n'importe quel point.</div>
+        <div class="help-item"><span class="help-key">Clic sur un marqueur</span> Popup avec toutes les données du lieu.</div>
+      </div>
+
+      <div class="help-section">
+        <div class="help-section-title">⊞ COUCHES D'AFFICHAGE</div>
+        <div class="help-item"><span class="help-key">Bouton COUCHES</span> Ouvre le panneau pour activer/désactiver chaque couche.</div>
+        <div class="help-item"><span class="help-key">🌡️ Météo</span> Marqueurs de température sur les villes et pays.</div>
+        <div class="help-item"><span class="help-key">🔴 Séismes</span> Tous les séismes ≥ 2.5 des 7 derniers jours (USGS).</div>
+        <div class="help-item"><span class="help-key">🌋 Volcans</span> Éruptions, cyclones et inondations en cours (GDACS).</div>
+        <div class="help-item"><span class="help-key">🌊 Océans</span> Température de l'air, vent et courants marins.</div>
+        <div class="help-item"><span class="help-key">🛸 ISS</span> Position et trajectoire de la Station Spatiale.</div>
+        <div class="help-item"><span class="help-key">📅 Prévisions</span> Bandeau 7 jours en bas de l'écran.</div>
+      </div>
+
+      <div class="help-section">
+        <div class="help-section-title">🛸 STATION ISS</div>
+        <div class="help-item"><span class="help-key">Icône satellite</span> Position en temps réel, mise à jour toutes les 5 secondes.</div>
+        <div class="help-item"><span class="help-key">Trait cyan</span> Orbite des 45 dernières minutes.</div>
+        <div class="help-item"><span class="help-key">Trait vert</span> Orbite des 45 prochaines minutes.</div>
+        <div class="help-item"><span class="help-key">Clic sur l'ISS</span> Altitude, vitesse, coordonnées en temps réel.</div>
+      </div>
+
+      <div class="help-section">
+        <div class="help-section-title">📍 PANNEAU MÉTÉO (GAUCHE)</div>
+        <div class="help-item"><span class="help-key">Bouton ◀ ▶</span> Rétracter / afficher le panneau météo.</div>
+        <div class="help-item"><span class="help-key">Contenu</span> Temp, ressenti, min/max, humidité, UV, vent, météo, heure locale du lieu, position du soleil dans le ciel.</div>
+        <div class="help-item"><span class="help-key">Arc solaire</span> Montre visuellement où se trouve le soleil entre lever et coucher.</div>
+        <div class="help-item"><span class="help-key">Heure locale</span> L'heure affichée est celle du lieu consulté, pas la vôtre.</div>
+      </div>
+
+      <div class="help-section">
+        <div class="help-section-title">📅 PRÉVISIONS 7 JOURS</div>
+        <div class="help-item"><span class="help-key">Bandeau bas</span> Température max/min, météo, vent et UV pour chaque jour.</div>
+        <div class="help-item"><span class="help-key">Bouton ▼</span> Masquer / afficher le bandeau de prévisions.</div>
+      </div>
+
+      <div class="help-section">
+        <div class="help-section-title">📱 SUR TÉLÉPHONE</div>
+        <div class="help-item"><span class="help-key">Bouton 🌡 MÉTÉO</span> Affiche/masque le panneau météo (en bas à gauche).</div>
+        <div class="help-item"><span class="help-key">Glisser un doigt</span> Se déplacer sur la carte ou tourner le globe.</div>
+        <div class="help-item"><span class="help-key">Pincer 2 doigts</span> Zoomer / Dézoomer.</div>
+        <div class="help-item"><span class="help-key">Appuyer sur la carte</span> Météo du lieu appuyé.</div>
+      </div>
+
+    </div>
+  </div>
+</div>
 
 <script src="app.js"></script>
 </body>
