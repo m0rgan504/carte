@@ -4,143 +4,147 @@
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>GeoWatch — Planetary Monitoring</title>
-
-  <!-- Leaflet (carte 2D) -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-
-  <!-- Three.js (globe 3D) -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-
-  <!-- SunCalc -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/suncalc/1.9.0/suncalc.min.js"></script>
-
-  <!-- Google Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com"/>
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
   <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Share+Tech+Mono&display=swap" rel="stylesheet"/>
-
   <link rel="stylesheet" href="style.css"/>
 </head>
 <body>
 
-  <!-- ░░ LOADING ░░ -->
-  <div id="loading-screen" class="loading-screen">
-    <div class="loading-content">
-      <div class="loading-logo">◈ GEOWATCH</div>
-      <div class="loading-sub">PLANETARY MONITORING SYSTEM</div>
-      <div class="loading-bar-wrap"><div class="loading-bar" id="loading-bar"></div></div>
-      <div class="loading-msg" id="loading-msg">Initialisation...</div>
+<!-- LOADING -->
+<div id="loading-screen" class="loading-screen">
+  <div class="loading-content">
+    <div class="loading-logo">◈ GEOWATCH</div>
+    <div class="loading-sub">PLANETARY MONITORING SYSTEM</div>
+    <div class="loading-bar-wrap"><div class="loading-bar" id="loading-bar"></div></div>
+    <div class="loading-msg" id="loading-msg">Initialisation...</div>
+  </div>
+</div>
+
+<div class="scanlines"></div>
+
+<!-- HEADER -->
+<header id="site-header">
+  <div class="header-left">
+    <div class="logo-glyph">◈</div>
+    <div class="logo-text">
+      <span class="logo-main">GEO<span class="neon-c">WATCH</span></span>
+      <span class="logo-sub">PLANETARY MONITORING SYSTEM</span>
     </div>
   </div>
-
-  <!-- ░░ SCANLINES ░░ -->
-  <div class="scanlines"></div>
-
-  <!-- ░░ HEADER ░░ -->
-  <header id="site-header">
-    <div class="header-left">
-      <div class="logo-glyph">◈</div>
-      <div class="logo-text">
-        <span class="logo-main">GEO<span class="neon-c">WATCH</span></span>
-        <span class="logo-sub">PLANETARY MONITORING SYSTEM</span>
-      </div>
-    </div>
-    <div class="header-center">
-      <div id="clock-time" class="clock-time">00:00:00</div>
-      <div id="clock-date" class="clock-date">--- --, ----</div>
-    </div>
-    <div class="header-right">
-      <div class="live-dot"></div>
-      <span class="live-label">LIVE</span>
-      <button id="btn-toggle-view" class="btn-mode">
-        <span id="mode-icon">🌐</span>
-        <span id="mode-label">GLOBE</span>
-      </button>
-    </div>
-  </header>
-
-  <!-- ░░ MAP 2D ░░ -->
-  <div id="map-wrap">
-    <div id="map"></div>
+  <div class="header-center">
+    <div id="clock-time" class="clock-time">00:00:00</div>
+    <div id="clock-date" class="clock-date">--- --, ----</div>
   </div>
-
-  <!-- ░░ GLOBE 3D (Three.js) ░░ -->
-  <div id="globe-wrap">
-    <canvas id="globe-canvas"></canvas>
-    <!-- Labels HTML sur le globe -->
-    <div id="globe-labels"></div>
+  <div class="header-right">
+    <div class="live-dot"></div>
+    <span class="live-label">LIVE</span>
+    <!-- Sélecteur de style carte -->
+    <div class="style-picker">
+      <button class="btn-style active" data-style="dark" title="Sombre cyberpunk">◼</button>
+      <button class="btn-style" data-style="satellite" title="Satellite">🛰</button>
+      <button class="btn-style" data-style="topo" title="Topographique">⛰</button>
+      <button class="btn-style" data-style="light" title="Clair">◻</button>
+    </div>
+    <button id="btn-toggle-view" class="btn-mode">
+      <span id="mode-icon">🌐</span>
+      <span id="mode-label">GLOBE</span>
+    </button>
   </div>
+</header>
 
-  <!-- ░░ HUD MÉTÉO ░░ -->
-  <div id="hud" class="hud">
-    <div class="hud-title">
-      <span>📍</span>
-      <span id="hud-loc">Chargement...</span>
-    </div>
-    <div class="hud-grid">
-      <div class="hud-cell"><div class="hud-lbl">TEMP</div><div class="hud-val" id="h-temp">--</div></div>
-      <div class="hud-cell"><div class="hud-lbl">RESSENTI</div><div class="hud-val" id="h-feels">--</div></div>
-      <div class="hud-cell"><div class="hud-lbl">MIN/MAX</div><div class="hud-val" id="h-mm">--</div></div>
-      <div class="hud-cell"><div class="hud-lbl">UV</div><div class="hud-val neon-o" id="h-uv">--</div></div>
-      <div class="hud-cell"><div class="hud-lbl">VENT</div><div class="hud-val" id="h-wind">--</div></div>
-      <div class="hud-cell"><div class="hud-lbl">DIR.</div><div class="hud-val" id="h-wdir">--</div></div>
-      <div class="hud-cell full"><div class="hud-lbl">MÉTÉO</div><div class="hud-val" id="h-wx">--</div></div>
-    </div>
-    <!-- Arc soleil -->
-    <div class="sun-block">
-      <div class="sun-label">SOLEIL — <span id="h-rise">--:--</span> ☀️ <span id="h-set">--:--</span> 🌙</div>
-      <svg viewBox="0 0 200 80" class="sun-svg">
-        <defs>
-          <linearGradient id="ag" x1="0%" y1="0%" x2="100%" y2="0%">
-            <stop offset="0%"   style="stop-color:#ff6b00;stop-opacity:.15"/>
-            <stop offset="50%"  style="stop-color:#ffe600;stop-opacity:.7"/>
-            <stop offset="100%" style="stop-color:#ff6b00;stop-opacity:.15"/>
-          </linearGradient>
-          <filter id="sg2">
-            <feGaussianBlur stdDeviation="2.5" result="b"/>
-            <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
-          </filter>
-        </defs>
-        <path d="M8 72 Q100 4 192 72" fill="none" stroke="url(#ag)" stroke-width="1.5" stroke-dasharray="4,3"/>
-        <line x1="8" y1="72" x2="192" y2="72" stroke="rgba(0,255,245,.18)" stroke-width="1"/>
-        <circle id="sun-dot" cx="100" cy="38" r="6" fill="#ffe600" filter="url(#sg2)"/>
-      </svg>
+<!-- MAP 2D -->
+<div id="map-wrap"><div id="map"></div></div>
+
+<!-- GLOBE 3D -->
+<div id="globe-wrap">
+  <canvas id="globe-canvas"></canvas>
+  <div id="globe-labels"></div>
+</div>
+
+<!-- HUD MÉTÉO -->
+<div id="hud" class="hud">
+  <div class="hud-title"><span>📍</span><span id="hud-loc">Chargement...</span></div>
+  <div class="hud-grid">
+    <div class="hud-cell"><div class="hud-lbl">TEMP</div><div class="hud-val" id="h-temp">--</div></div>
+    <div class="hud-cell"><div class="hud-lbl">RESSENTI</div><div class="hud-val" id="h-feels">--</div></div>
+    <div class="hud-cell"><div class="hud-lbl">MIN/MAX</div><div class="hud-val" id="h-mm">--</div></div>
+    <div class="hud-cell"><div class="hud-lbl">UV</div><div class="hud-val neon-o" id="h-uv">--</div></div>
+    <div class="hud-cell"><div class="hud-lbl">VENT</div><div class="hud-val" id="h-wind">--</div></div>
+    <div class="hud-cell"><div class="hud-lbl">DIR.</div><div class="hud-val" id="h-wdir">--</div></div>
+    <div class="hud-cell full"><div class="hud-lbl">MÉTÉO</div><div class="hud-val" id="h-wx">--</div></div>
+    <div class="hud-cell full hud-cell-local">
+      <div class="hud-lbl">HEURE LOCALE</div>
+      <div class="hud-val neon-y" id="h-localtime">--:--:--</div>
     </div>
   </div>
+  <!-- Arc soleil -->
+  <div class="sun-block">
+    <div class="sun-label">☀️ <span id="h-rise">--:--</span> &nbsp;—&nbsp; <span id="h-set">--:--</span> 🌙</div>
+    <svg viewBox="0 0 200 80" class="sun-svg">
+      <defs>
+        <linearGradient id="ag" x1="0%" y1="0%" x2="100%" y2="0%">
+          <stop offset="0%"   style="stop-color:#ff6b00;stop-opacity:.15"/>
+          <stop offset="50%"  style="stop-color:#ffe600;stop-opacity:.7"/>
+          <stop offset="100%" style="stop-color:#ff6b00;stop-opacity:.15"/>
+        </linearGradient>
+        <filter id="sg2">
+          <feGaussianBlur stdDeviation="2.5" result="b"/>
+          <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+        </filter>
+      </defs>
+      <path d="M8 72 Q100 4 192 72" fill="none" stroke="url(#ag)" stroke-width="1.5" stroke-dasharray="4,3"/>
+      <line x1="8" y1="72" x2="192" y2="72" stroke="rgba(0,255,245,.18)" stroke-width="1"/>
+      <circle id="sun-dot" cx="100" cy="38" r="6" fill="#ffe600" filter="url(#sg2)"/>
+    </svg>
+  </div>
+  <!-- ISS Infos -->
+  <div class="iss-block">
+    <div class="iss-title">🛸 ISS — STATION SPATIALE</div>
+    <div class="iss-grid">
+      <div class="iss-cell"><span class="iss-lbl">LAT</span><span class="iss-val" id="iss-lat">--</span></div>
+      <div class="iss-cell"><span class="iss-lbl">LNG</span><span class="iss-val" id="iss-lng">--</span></div>
+      <div class="iss-cell"><span class="iss-lbl">ALTITUDE</span><span class="iss-val" id="iss-alt">--</span></div>
+      <div class="iss-cell"><span class="iss-lbl">VITESSE</span><span class="iss-val" id="iss-spd">--</span></div>
+      <div class="iss-cell"><span class="iss-lbl">TEMP EXT.</span><span class="iss-val" id="iss-temp">~−120°/+120°C</span></div>
+      <div class="iss-cell"><span class="iss-lbl">PÉRIODE</span><span class="iss-val">~92 min</span></div>
+    </div>
+  </div>
+</div>
+<button id="hud-toggle" class="hud-toggle"><span id="hud-arrow">◀</span></button>
 
-  <!-- ░░ BOUTON RÉTRACTER HUD ░░ -->
-  <button id="hud-toggle" class="hud-toggle" title="Afficher/Masquer le HUD">
-    <span id="hud-arrow">◀</span>
-  </button>
-
-  <!-- ░░ PRÉVISIONS 7J ░░ -->
-  <div id="forecast" class="forecast">
+<!-- PRÉVISIONS 7J -->
+<div id="forecast" class="forecast">
+  <div class="fc-header">
     <div class="fc-title">◈ PRÉVISIONS 7 JOURS</div>
+    <button id="fc-toggle" class="fc-toggle" title="Rétracter">▼</button>
+  </div>
+  <div id="fc-body" class="fc-body">
     <div id="fc-grid" class="fc-grid"></div>
   </div>
+</div>
 
-  <!-- ░░ LÉGENDE ░░ -->
-  <div id="legend" class="legend">
-    <div class="legend-title">LÉGENDE</div>
-    <div class="leg-row"><span class="leg-dot" style="background:#ff2d78;box-shadow:0 0 5px #ff2d78"></span>Séisme M≥6</div>
-    <div class="leg-row"><span class="leg-dot" style="background:#ff6b00;box-shadow:0 0 5px #ff6b00"></span>Séisme M4–6</div>
-    <div class="leg-row"><span class="leg-dot" style="background:#ffe600;box-shadow:0 0 5px #ffe600"></span>Séisme M&lt;4</div>
-    <div class="leg-row"><span class="leg-dot" style="background:#b266ff;box-shadow:0 0 5px #b266ff"></span>Cyclone/Tempête</div>
-    <div class="leg-row"><span class="leg-dot" style="background:#ff4400;box-shadow:0 0 5px #ff4400"></span>Éruption</div>
-    <div class="leg-row"><span class="leg-dot" style="background:#0088ff;box-shadow:0 0 5px #0088ff"></span>Inondation</div>
-    <div class="leg-row"><span class="leg-dot" style="background:#00ff9f;box-shadow:0 0 5px #00ff9f"></span>ISS</div>
-  </div>
+<!-- LÉGENDE -->
+<div id="legend" class="legend">
+  <div class="legend-title">LÉGENDE</div>
+  <div class="leg-row"><span class="leg-dot" style="background:#ff2d78;box-shadow:0 0 5px #ff2d78"></span>Séisme M≥6</div>
+  <div class="leg-row"><span class="leg-dot" style="background:#ff6b00;box-shadow:0 0 5px #ff6b00"></span>Séisme M4–6</div>
+  <div class="leg-row"><span class="leg-dot" style="background:#ffe600;box-shadow:0 0 5px #ffe600"></span>Séisme M&lt;4</div>
+  <div class="leg-row"><span class="leg-dot" style="background:#b266ff;box-shadow:0 0 5px #b266ff"></span>Cyclone</div>
+  <div class="leg-row"><span class="leg-dot" style="background:#ff4400;box-shadow:0 0 5px #ff4400"></span>Éruption</div>
+  <div class="leg-row"><span class="leg-dot" style="background:#0088ff;box-shadow:0 0 5px #0088ff"></span>Inondation</div>
+  <div class="leg-row"><span class="leg-dot" style="background:#00ff9f;box-shadow:0 0 5px #00ff9f"></span>ISS</div>
+  <div class="leg-row"><span class="leg-dot" style="background:#00ccff;box-shadow:0 0 5px #00ccff"></span>Océan/Mer</div>
+</div>
 
-  <!-- ░░ ZOOM INDICATOR ░░ -->
-  <div id="zoom-ind" class="zoom-ind">ZOOM : 4</div>
+<div id="zoom-ind" class="zoom-ind">ZOOM : 4</div>
+<div id="tip" class="tip" style="display:none"></div>
+<button id="mob-hud" class="mob-hud">◈ MÉTÉO</button>
 
-  <!-- ░░ MAP TOOLTIP ░░ -->
-  <div id="tip" class="tip" style="display:none"></div>
-
-  <!-- ░░ MOBILE HUD BTN ░░ -->
-  <button id="mob-hud" class="mob-hud">◈ MÉTÉO</button>
-
-  <script src="app.js"></script>
+<script src="app.js"></script>
 </body>
 </html>
